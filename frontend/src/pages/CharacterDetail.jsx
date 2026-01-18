@@ -18,7 +18,8 @@ const CharacterStats = lazy(() => import('../components/CharacterStats'));
 const CharacterTimeline = lazy(() => import('../components/CharacterTimeline'));
 
 const CharacterDetail = () => {
-  const { id } = useParams()
+  const { idOrSlug } = useParams()
+  const id = idOrSlug; // For backward compatibility
   const [activeTab, setActiveTab] = useState('story')
   const [bookmarked, setBookmarked] = useState(false)
   
@@ -121,7 +122,7 @@ const CharacterDetail = () => {
   return (
     <div>
       <Helmet>
-        <title>{character.arabic_name || character.name} - على خطاهم</title>
+        <title>{`${character.arabic_name || character.name} - على خطاهم`}</title>
         <meta name="description" content={character.description} />
         <meta property="og:title" content={character.arabic_name || character.name} />
         <meta property="og:description" content={character.description} />
@@ -290,7 +291,7 @@ const CharacterDetail = () => {
                       <span>عدد المشاهدات</span>
                     </div>
                     <span className="font-bold text-2xl">
-                      {character.views_count.toLocaleString()}
+                      {character?.views_count?.toLocaleString() || '0'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -299,7 +300,7 @@ const CharacterDetail = () => {
                       <span>عدد المعجبين</span>
                     </div>
                     <span className="font-bold text-2xl">
-                      {character.likes_count.toLocaleString()}
+                      {character?.likes_count?.toLocaleString() || '0'}
                     </span>
                   </div>
                 </div>

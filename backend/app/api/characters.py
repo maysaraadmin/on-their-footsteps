@@ -202,3 +202,179 @@ async def get_character(
     except Exception as e:
         log_error(logger, e, {"action": "get_character", "character_id": character_id})
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+@router.post("/{character_id}/view")
+async def increment_views(
+    character_id: Union[str, int],
+    db: Session = Depends(get_db)
+):
+    """Increment character view count.
+    
+    Args:
+        character_id: Character identifier (numeric ID or string slug)
+        db: Database session dependency
+        
+    Returns:
+        dict: Updated character data
+        
+    Raises:
+        HTTPException: If character not found (404)
+        HTTPException: If database error occurs (500)
+    """
+    try:
+        # Handle both numeric IDs and string slugs
+        if isinstance(character_id, str) and character_id.isdigit():
+            character_id_int = int(character_id)
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id_int
+            ).first()
+        elif isinstance(character_id, int):
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id
+            ).first()
+        else:
+            # Try to find by slug field if it exists
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.slug == character_id
+            ).first()
+        
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+        
+        # Increment view count
+        character.views_count += 1
+        db.commit()
+        
+        # Invalidate cache
+        invalidate_character_cache(character_id)
+        
+        return {
+            "id": character.id,
+            "views_count": character.views_count,
+            "message": "View count incremented"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(logger, e, {"action": "increment_views", "character_id": character_id})
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+@router.patch("/{character_id}/like")
+async def toggle_like(
+    character_id: Union[str, int],
+    liked: bool,
+    db: Session = Depends(get_db)
+):
+    """Toggle character like status.
+    
+    Args:
+        character_id: Character identifier (numeric ID or string slug)
+        liked: Like status
+        db: Database session dependency
+        
+    Returns:
+        dict: Updated character data
+        
+    Raises:
+        HTTPException: If character not found (404)
+        HTTPException: If database error occurs (500)
+    """
+    try:
+        # Handle both numeric IDs and string slugs
+        if isinstance(character_id, str) and character_id.isdigit():
+            character_id_int = int(character_id)
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id_int
+            ).first()
+        elif isinstance(character_id, int):
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id
+            ).first()
+        else:
+            # Try to find by slug field if it exists
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.slug == character_id
+            ).first()
+        
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+        
+        # Update like count
+        if liked:
+            character.likes_count += 1
+        else:
+            character.likes_count = max(0, character.likes_count - 1)
+        
+        db.commit()
+        
+        # Invalidate cache
+        invalidate_character_cache(character_id)
+        
+        return {
+            "id": character.id,
+            "likes_count": character.likes_count,
+            "liked": liked,
+            "message": "Like status updated"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(logger, e, {"action": "toggle_like", "character_id": character_id})
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+@router.post("/{character_id}/share")
+async def share_character(
+    character_id: Union[str, int],
+    db: Session = Depends(get_db)
+):
+    """Record character share.
+    
+    Args:
+        character_id: Character identifier (numeric ID or string slug)
+        db: Database session dependency
+        
+    Returns:
+        dict: Share result
+        
+    Raises:
+        HTTPException: If character not found (404)
+        HTTPException: If database error occurs (500)
+    """
+    try:
+        # Handle both numeric IDs and string slugs
+        if isinstance(character_id, str) and character_id.isdigit():
+            character_id_int = int(character_id)
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id_int
+            ).first()
+        elif isinstance(character_id, int):
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id
+            ).first()
+        else:
+            # Try to find by slug field if it exists
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.slug == character_id
+            ).first()
+        
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+        
+        # Increment share count if field exists
+        if hasattr(character, 'shares_count'):
+            character.shares_count += 1
+            db.commit()
+        
+        # Invalidate cache
+        invalidate_character_cache(character_id)
+        
+        return {
+            "id": character.id,
+            "shares_count": getattr(character, 'shares_count', 0),
+            "message": "Character shared successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(logger, e, {"action": "share_character", "character_id": character_id})
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

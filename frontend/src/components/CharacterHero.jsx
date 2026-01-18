@@ -2,7 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { Star } from 'lucide-react'
 
-const CharacterHero = React.memo(({ character }) => {
+const CharacterHero = ({ character }) => {
   return (
     <div className="relative h-96 overflow-hidden">
       {/* Background Image */}

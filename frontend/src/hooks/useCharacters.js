@@ -293,15 +293,52 @@ export function useCharacter(identifier, options = {}) {
    * Increment view count
    */
   const incrementViews = useCallback(async () => {
-    if (!character) return;
+    if (!character) {
+      console.warn('Cannot increment views: No character data available');
+      return null;
+    }
 
+    const characterId = character.id || character.slug;
+    if (!characterId) {
+      console.error('Cannot increment views: Missing character ID/slug');
+      return null;
+    }
+
+    console.log(`Attempting to increment views for character: ${characterId}`);
+    
     try {
-      const updatedCharacter = await repository.incrementViews(character.id || character.slug);
+      const updatedCharacter = await repository.incrementViews(characterId);
+      console.log('Successfully incremented views:', updatedCharacter);
       setCharacter(updatedCharacter);
       return updatedCharacter;
     } catch (err) {
-      // Don't set error for view count failures
-      console.warn('Failed to increment views:', err);
+      // Enhanced error logging
+      const errorDetails = {
+        message: err.message,
+        name: err.name,
+        code: err.code,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        responseData: err.response?.data,
+        config: {
+          url: err.config?.url,
+          method: err.config?.method,
+          baseURL: err.config?.baseURL,
+          timeout: err.config?.timeout,
+          headers: err.config?.headers,
+        },
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+      };
+      
+      console.error('Failed to increment views:', {
+        characterId,
+        error: errorDetails,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        apiBaseURL: process.env.REACT_APP_API_URL || window.location.origin,
+      });
+      
+      // Don't set error for view count failures to avoid UI disruption
       return null;
     }
   }, [character, repository]);

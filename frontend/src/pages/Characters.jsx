@@ -74,11 +74,12 @@ const Characters = () => {
         }
 
         const response = await characters.getAll(params);
-        const data = response.data;
+        const data = response.data || [];
 
-        setCharactersList(data.characters || []);
-        setTotal(data.total || 0);
-        setTotalPages(Math.ceil(data.total / itemsPerPage) || 1);
+        // The API returns the array of characters directly
+        setCharactersList(Array.isArray(data) ? data : []);
+        setTotal(response.headers['x-total-count'] || data.length || 0);
+        setTotalPages(Math.ceil((response.headers['x-total-count'] || data.length || 0) / itemsPerPage) || 1);
       } catch (err) {
         setError('فشل في تحميل الشخصيات');
         console.error('Error fetching characters:', err);

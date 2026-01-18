@@ -3,18 +3,32 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
 
-# Check if SQLite
-is_sqlite = settings.DATABASE_URL.startswith('sqlite:')
+# Create SQLAlchemy engine with SQLite configuration
+if 'sqlite' in settings.DATABASE_URL:
+    # SQLite configuration - disable connection pooling
+    engine = create_engine(
+        settings.DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True
+    )
+else:
+    # For other databases, use connection pooling
+    engine = create_engine(
+        settings.DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        pool_size=5,
+        max_overflow=10,
+        pool_timeout=30
+    )
 
-# Create engine with SQLite-specific parameters
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if is_sqlite else {},
-    echo=settings.DEBUG  # Enable SQL echo in debug mode
+# Create session factory with autoflush and expire_on_commit set to False for better performance
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    expire_on_commit=False
 )
-
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for models
 Base = declarative_base()

@@ -5,7 +5,7 @@ from pydantic import validator
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost/on_their_footsteps"
+    DATABASE_URL: str = "sqlite:///./on_their_footsteps.db"
     DATABASE_TEST_URL: str = "sqlite:///./test.db"
     
     # Security

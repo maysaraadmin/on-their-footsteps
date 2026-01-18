@@ -3,17 +3,18 @@ import ApiService from './apiService'
 import { requestDeduplication } from '../utils/requestDeduplicator'
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
-const MAX_RETRIES = 3
-const RETRY_DELAY = 1000 // 1 second
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const MAX_RETRIES = 2
+const RETRY_DELAY = 5000 // 5 seconds
 
 // Create ApiService instance for dependency injection
 const apiService = new ApiService()
 
-// Create axios instance with default config
+// Create axios instance with base URL and timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10 seconds timeout
+  timeout: 30000, // 30 seconds
+  withCredentials: false, // Disable credentials for CORS
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -21,7 +22,6 @@ const api = axios.create({
     'Pragma': 'no-cache',
     'Expires': '0',
   },
-  withCredentials: true // Important for cookies/session
 })
 
 // Request interceptor

@@ -5,6 +5,9 @@
   --accent: #4299e1;
   --text: #2d3748;
   --background: #f7fafc;
+  direction: rtl;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
 }
 
 /* Base styles */
@@ -21,12 +24,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--background);
   color: var(--text);
-  direction: rtl;
+  text-align: right;
 }
 
 /* RTL Support */
 [dir='rtl'] {
-  direction: rtl;
   text-align: right;
 }
 
