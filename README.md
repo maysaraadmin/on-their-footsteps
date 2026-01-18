@@ -30,7 +30,7 @@
 
 ### 1. استنساخ المستودع
 ```bash
-git clone https://github.com/maysaraadmin/on-their-footsteps
+git clone https://github.com/on-their-footsteps/on-their-footsteps.git
 cd on-their-footsteps
 ```
 
