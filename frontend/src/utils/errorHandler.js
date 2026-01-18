@@ -3,6 +3,18 @@
  */
 
 /**
+ * Custom error class for API errors
+ */
+export class ApiError extends Error {
+  constructor(message, status = null, code = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+/**
  * Get a user-friendly error message based on the error object
  * @param {Error|Object} error - The error object from the API or a thrown error
  * @param {string} defaultMessage - Default message to show if no specific message can be determined
@@ -47,6 +59,11 @@ export const getErrorMessage = (error, defaultMessage = 'حدث خطأ غير م
     return 'تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.';
   }
   
+  // Handle cancelled requests
+  if (error.name === 'AbortError') {
+    return 'تم إلغاء الطلب';
+  }
+  
   // Return the error message if it exists, otherwise return the default message
   return error.message || defaultMessage;
 };
@@ -68,6 +85,11 @@ export const handleApiError = (error, {
   toast = null
 } = {}) => {
   const errorMessage = getErrorMessage(error, defaultMessage);
+  
+  // Don't handle cancelled requests
+  if (error.name === 'AbortError') {
+    return;
+  }
   
   // Log the error for debugging
   console.error('API Error:', {
@@ -132,4 +154,21 @@ export const handleValidationError = (error, setError, {
       defaultMessage: 'حدث خطأ أثناء التحقق من صحة النموذج. يرجى المحاولة مرة أخرى.'
     });
   }
+};
+
+/**
+ * Create a safe async function wrapper that handles errors
+ * @param {Function} asyncFn - The async function to wrap
+ * @param {Object} options - Error handling options
+ * @returns {Function} Wrapped function
+ */
+export const withErrorHandling = (asyncFn, options = {}) => {
+  return async (...args) => {
+    try {
+      return await asyncFn(...args);
+    } catch (error) {
+      handleApiError(error, options);
+      throw error;
+    }
+  };
 };

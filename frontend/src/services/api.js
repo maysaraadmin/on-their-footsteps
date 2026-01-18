@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 const MAX_RETRIES = 3
 const RETRY_DELAY = 1000 // 1 second
 
@@ -164,9 +164,13 @@ export const characters = {
   getAll: (params) => apiRequest('get', '/characters', null, { params }),
   getById: (id) => apiRequest('get', `/characters/${id}`),
   search: (query, limit = 20) => apiRequest('get', '/characters/search', null, { params: { q: query, limit } }),
-  getFeatured: (limit = 6) => apiRequest('get', '/characters/featured', null, { params: { limit } }),
-  getRelated: (id) => apiRequest('get', `/characters/${id}/related`),
-  getCategories: () => apiRequest('get', '/characters/categories'),
+  getFeatured: (limit = 6, category = null) => {
+    if (category) {
+      return apiRequest('get', `/content/featured/${category}`, null, { params: { limit } })
+    }
+    return apiRequest('get', '/content/featured/general', null, { params: { limit } })
+  },
+  getCategories: () => apiRequest('get', '/content/categories'),
 }
 
 export const progress = {

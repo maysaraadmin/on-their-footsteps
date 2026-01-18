@@ -20,6 +20,7 @@ class IslamicCharacter(Base):
     era = Column(String(100), index=True)
     category = Column(String(100), index=True)  # نبي، صحابي، تابعي، عالم
     sub_category = Column(String(100))  # خليفة، قائد، فقيه
+    slug = Column(String(200), unique=True, index=True)  # URL-friendly identifier
     
     # Content
     full_story = Column(Text)

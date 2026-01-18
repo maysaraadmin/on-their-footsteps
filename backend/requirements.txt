@@ -14,3 +14,6 @@ pillow==10.4.0
 lottie==0.7.2
 pytest==7.4.3
 httpx==0.25.1
+prometheus-client==0.16.0
+psutil==5.9.0
+passlib[bcrypt]==1.7.4

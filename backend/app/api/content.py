@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import IslamicCharacter
+from ..schemas import CharacterResponse
 
 router = APIRouter()
 
@@ -62,17 +63,33 @@ async def search_content(
         "limit": limit
     }
 
-@router.get("/featured/{category}")
+@router.get("/featured/{category}", response_model=List[CharacterResponse])
 async def get_featured_by_category(
     category: str,
     limit: int = Query(5, le=10),
     db: Session = Depends(get_db)
-) -> List[IslamicCharacter]:
+):
     """Get featured characters by category"""
-    return db.query(IslamicCharacter).filter(
+    characters = db.query(IslamicCharacter).filter(
         IslamicCharacter.category == category,
         IslamicCharacter.is_featured == True
-    ).order_by(IslamicCharacter.sort_order).limit(limit).all()
+    ).order_by(IslamicCharacter.name).limit(limit).all()
+    
+    # Convert to response models
+    return [CharacterResponse.model_validate(char) for char in characters]
+
+@router.get("/featured/general", response_model=List[CharacterResponse])
+async def get_featured_general(
+    limit: int = Query(6, le=10),
+    db: Session = Depends(get_db)
+):
+    """Get featured characters across all categories"""
+    characters = db.query(IslamicCharacter).filter(
+        IslamicCharacter.is_featured == True
+    ).order_by(IslamicCharacter.name).limit(limit).all()
+    
+    # Convert to response models
+    return [CharacterResponse.model_validate(char) for char in characters]
 
 @router.get("/timeline/all")
 async def get_global_timeline(

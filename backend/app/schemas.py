@@ -43,12 +43,27 @@ class CharacterUpdate(BaseModel):
     description: Optional[str] = None
     is_featured: Optional[bool] = None
 
-class CharacterResponse(CharacterBase):
+class CharacterResponse(BaseModel):
     id: int
+    name: str
+    arabic_name: str
+    english_name: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    birth_year: Optional[int] = None
+    death_year: Optional[int] = None
+    era: str
+    category: str
+    sub_category: Optional[str] = None
+    slug: str
     profile_image: Optional[str] = None
     views_count: int
     likes_count: int
+    shares_count: int
     is_featured: bool
+    is_verified: bool
+    verification_source: Optional[str] = None
+    verification_notes: Optional[str] = None
     created_at: datetime
     
     class Config:

@@ -1,151 +1,127 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List, Optional
+from sqlalchemy.orm import Session
+from typing import List, Optional, Union
+from ..database import get_db
+from ..models import IslamicCharacter
+from ..schemas import CharacterResponse, CharacterCreate
+from ..logging_config import get_logger, log_database_operation, log_error
+from ..cache import cache_result, CharacterCache, invalidate_character_cache
+import json
 
 router = APIRouter()
+logger = get_logger(__name__)
 
-# Mock data - replace with actual database queries
-characters = [
-    {
-        "id": 1, 
-        "name": "محمد صلى الله عليه وسلم", 
-        "arabic_name": "محمد بن عبد الله",
-        "era": "العصر النبوي",
-        "category": "نبي",
-        "title": "رسول الله وخاتم النبيين",
-        "description": "رسول الله وخاتم النبيين",
-        "views_count": 15000, 
-        "likes_count": 8500,
-        "birth_year": 570,
-        "death_year": 632,
-        "birth_place": "مكة المكرمة",
-        "death_place": "المدينة المنورة",
-        "timeline_events": [
-            {"year": 610, "title": "بداية الوحي", "description": "نزول الوحي على النبي في غار حراء"},
-            {"year": 622, "title": "الهجرة النبوية", "description": "هجرة النبي من مكة إلى المدينة"},
-            {"year": 624, "title": "غزوة بدر", "description": "أول معركة كبرى في الإسلام"}
-        ]
-    },
-    {
-        "id": 2, 
-        "name": "أبو بكر الصديق", 
-        "arabic_name": "عبد الله بن عثمان",
-        "era": "العصر الراشدي",
-        "category": "صحابي",
-        "title": "أول الخلفاء الراشدين",
-        "description": "أول الخلفاء الراشدين وصاحب رسول الله",
-        "profile_image": "/static/images/characters/abu_bakr_profile.jpg",
-        "views_count": 12000, 
-        "likes_count": 6200,
-        "birth_year": 573,
-        "death_year": 634,
-        "birth_place": "مكة المكرمة",
-        "death_place": "المدينة المنورة",
-        "is_verified": True,
-        "full_story": "أبو بكر الصديق هو عبد الله بن عثمان بن عامر بن عمرو بن كعب بن سعد بن تيم بن مرة بن كعب بن لؤي بن غالب القرشي التيمي. ولد في مكة بعد عام الفيل بسنتين وثلاثة أشهر، وكان رجلاً أبيض نحيفاً خفيف العارضين، معروق الوجه، ناتئ الجبهة، يخضب بالحناء والكتم.\n\nأسلم أبو بكر الصديق على يد النبي محمد صلى الله عليه وسلم، ودخل في الإسلام وهو ابن سبع وثلاثين سنة، وكان من السابقين الأولين إلى الإسلام، وهو أول من أسلم من الرجال الأحرار. وقد كان أبو بكر من أغنياء قريش، فلما أسلم أنفق ماله في سبيل الله.\n\nهاجر أبو بكر مع النبي صلى الله عليه وسلم من مكة إلى المدينة، وكان رفيقه في الهجرة. وشهد مع النبي صلى الله عليه وسلم المشاهد كلها، وثبت معه يوم أحد ويوم حنين.\n\nبويع أبو بكر بالخلافة بعد وفاة النبي صلى الله عليه وسلم في سقيفة بني ساعدة، وكان أول الخلفاء الراشدين. وفي عهده تم حروب الردة، وفتحت البلاد، وجمع القرآن.\n\nتوفي أبو بكر الصديق رضي الله عنه في يوم الاثنين لثمان ليالٍ خلت من جمادى الآخرة سنة ثلاث عشرة من الهجرة، وله من العمر ثلاث وستون سنة، وكانت خلافته سنتين وثلاثة أشهر وعشر ليالٍ.",
-        "key_achievements": [
-            "أول من أسلم من الرجال الأحرار",
-            "صاحب رسول الله في الهجرة",
-            "أول الخلفاء الراشدين",
-            "جمع القرآن الكريم",
-            "قادة حروب الردة",
-            "فتحت في عهده بلاد فارس والشام"
-        ],
-        "lessons": [
-            "الصدق في القول والعمل",
-            "الإخلاص في خدمة الإسلام",
-            "الشجاعة في الحق",
-            "العلم بالدين",
-            "حفظ القرآن الكريم",
-            "العدل بين الناس"
-        ],
-        "audio_stories": [
-            "/static/audio/abu_bakr_story_1.mp3",
-            "/static/audio/abu_bakr_story_2.mp3"
-        ],
-        "animations": [
-            "/static/animations/abu_bakr_migration.json"
-        ],
-        "timeline_events": [
-            {"year": 573, "title": "الميلاد", "description": "ولادة أبو بكر الصديق في مكة"},
-            {"year": 610, "title": "الإسلام", "description": "أسلم أبو بكر على يد النبي"},
-            {"year": 622, "title": "الهجرة", "description": "هاجر مع النبي إلى المدينة"},
-            {"year": 632, "title": "تولي الخلافة", "description": "بويع بالخلافة بعد وفاة النبي"},
-            {"year": 633, "title": "حروب الردة", "description": "قيادة الجيوش في حروب الردة"},
-            {"year": 634, "title": "الوفاة", "description": "توفي في المدينة المنورة"}
-        ]
-    },
-    {
-        "id": 3, 
-        "name": "عمر بن الخطاب", 
-        "arabic_name": "عمر بن الخطاب",
-        "era": "العصر الراشدي",
-        "category": "صحابي",
-        "title": "ثاني الخلفاء الراشدين",
-        "description": "ثاني الخلفاء الراشدين وأمير المؤمنين",
-        "views_count": 10000, 
-        "likes_count": 5800,
-        "birth_year": 584,
-        "death_year": 644,
-        "birth_place": "مكة المكرمة",
-        "death_place": "المدينة المنورة",
-        "timeline_events": [
-            {"year": 634, "title": "تولي الخلافة", "description": "تولي الخلافة بعد وفاة أبي بكر"},
-            {"year": 637, "title": "فتح القدس", "description": "فتح مدينة القدس"},
-            {"year": 638, "title": "تأسيس التقويم الهجري", "description": "إنشاء التقويم الإسلامي"}
-        ]
-    }
-]
+# Character slug mapping for backward compatibility
+CHARACTER_SLUGS = {
+    "muhammad": 1,
+    "abu-bakr": 2,
+    "umar": 3,
+    "uthman": 4,
+    "ali": 5
+}
 
-categories = [
-    {"id": 1, "name": "الخلفاء الراشدون", "description": "خلفاء رسول الله الأربعة", "count": 4, "icon": "👑"},
-    {"id": 2, "name": "العشرة المبشرون بالجنة", "description": "الصحابة الذين بشرهم النبي بالجنة", "count": 10, "icon": "🏆"},
-    {"id": 3, "name": "أمهات المؤمنين", "description": "زوجات رسول الله الطاهرات", "count": 11, "icon": "🌹"},
-]
-
-@router.get("/")
-async def get_characters():
-    return characters
-
-@router.get("/featured")
-async def get_featured_characters(limit: int = Query(6, description="Number of featured characters to return")):
-    """
-    Get featured characters
-    
-    Args:
-        limit: Maximum number of featured characters to return (default: 6)
-    """
-    # In a real application, you would filter by a 'featured' flag in the database
-    # For now, we'll return the first 'limit' characters as featured
-    return {"data": characters[:limit]}
-
-@router.get("/categories")
-async def get_categories():
-    return categories
-
-@router.get("/{character_id}")
-async def get_character(character_id: str):
-    # Try to find by numeric ID first
+@router.get("/", response_model=List[CharacterResponse])
+async def get_characters(
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(12, ge=1, le=100, description="Items per page"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    era: Optional[str] = Query(None, description="Filter by era"),
+    sort: str = Query("name", regex="^(name|views|likes|created|updated)$", description="Sort field"),
+    db: Session = Depends(get_db)
+):
+    """Get all characters with pagination and filtering"""
     try:
-        id_num = int(character_id)
-        if id_num < 1 or id_num > len(characters):
+        logger.info(f"Fetching characters with filters: category={category}, era={era}, page={page}, limit={limit}")
+        query = db.query(IslamicCharacter)
+        
+        # Apply filters
+        if category:
+            query = query.filter(IslamicCharacter.category == category)
+        if era:
+            query = query.filter(IslamicCharacter.era == era)
+        
+        # Apply sorting
+        if sort == "name":
+            query = query.order_by(IslamicCharacter.name)
+        elif sort == "views":
+            query = query.order_by(IslamicCharacter.views_count.desc())
+        elif sort == "likes":
+            query = query.order_by(IslamicCharacter.likes_count.desc())
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        offset = (page - 1) * limit
+        characters = query.offset(offset).limit(limit).all()
+        
+        logger.info(f"Retrieved {len(characters)} characters (total: {total})")
+        
+        # Convert to response models
+        return [CharacterResponse.model_validate(char) for char in characters]
+    except Exception as e:
+        log_error(logger, e, {"action": "get_characters", "category": category, "era": era})
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+@router.get("/{character_id}", response_model=CharacterResponse)
+@cache_result(expire=600, key_prefix="character_detail")
+async def get_character(
+    character_id: Union[str, int],
+    db: Session = Depends(get_db)
+):
+    """Get specific character by ID or slug"""
+    try:
+        # Handle both numeric IDs and string slugs
+        if isinstance(character_id, str) and character_id.isdigit():
+            character_id_int = int(character_id)
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id_int
+            ).first()
+        elif isinstance(character_id, int):
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.id == character_id
+            ).first()
+        else:
+            # Try to find by slug field if it exists
+            character = db.query(IslamicCharacter).filter(
+                IslamicCharacter.slug == character_id
+            ).first()
+        
+        if not character:
             raise HTTPException(status_code=404, detail="Character not found")
-        return characters[id_num - 1]
-    except ValueError:
-        # If not numeric, try to find by name/alias
-        character_map = {
-            "abu-bakr": 2,
-            "abu_bakr": 2,
-            "abubakr": 2,
-            "omar": 3,
-            "umar": 3,
-            "omar-bin-khattab": 3,
-            "umar-bin-khattab": 3,
-            "muhammad": 1,
-            "prophet": 1
-        }
         
-        if character_id.lower() in character_map:
-            idx = character_map[character_id.lower()] - 1
-            return characters[idx]
+        # Increment view count (this will invalidate cache)
+        character.views_count += 1
+        db.commit()
         
-        raise HTTPException(status_code=404, detail="Character not found")
+        # Invalidate related cache entries
+        invalidate_character_cache(character_id)
+        
+        return CharacterResponse(
+            id=character.id,
+            name=character.name,
+            arabic_name=character.arabic_name,
+            title=character.title,
+            description=character.description,
+            category=character.category,
+            era=character.era,
+            profile_image=character.profile_image,
+            views_count=character.views_count,
+            likes_count=character.likes_count,
+            birth_year=character.birth_year,
+            death_year=character.death_year,
+            birth_place=character.birth_place,
+            death_place=character.death_place,
+            full_story=character.full_story,
+            key_achievements=character.key_achievements or [],
+            lessons=character.lessons or [],
+            quotes=character.quotes or [],
+            timeline_events=character.timeline_events or [],
+            related_characters=character.related_characters or [],
+            is_verified=getattr(character, 'is_verified', False)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(logger, e, {"action": "get_character", "character_id": character_id})
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

@@ -8,6 +8,7 @@ import webbrowser
 import threading
 import platform
 import psutil
+import requests
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
 from queue import Queue, Empty
@@ -166,16 +167,33 @@ class ProcessManager:
             return True
             
         try:
-            import requests
+            # Skip health checks during startup period
             current_time = time.time()
+            startup_grace_period = 30  # Give 30 seconds for startup
             
-            # Don't check too frequently (min 5 seconds between checks)
-            if current_time - proc_info.last_health_check < 5:
+            if current_time - proc_info.start_time < startup_grace_period:
+                return True
+                
+            # Don't check too frequently (min 15 seconds between checks)
+            if current_time - proc_info.last_health_check < 15:
                 return True
                 
             proc_info.last_health_check = current_time
-            response = requests.get(proc_info.health_check_url, timeout=5)
-            return response.status_code == 200
+            # Increase timeout to 15 seconds and add retry logic
+            for attempt in range(3):
+                try:
+                    response = requests.get(proc_info.health_check_url, timeout=15)
+                    return response.status_code == 200
+                except requests.exceptions.Timeout:
+                    if attempt < 2:
+                        time.sleep(2)  # Wait 2 seconds before retry
+                        continue
+                    raise
+                except requests.exceptions.ConnectionError:
+                    if attempt < 2:
+                        time.sleep(2)  # Wait 2 seconds before retry
+                        continue
+                    raise
             
         except Exception as e:
             self.log(f"Health check failed for {proc_info.name}: {str(e)}", 

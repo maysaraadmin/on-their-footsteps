@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List, Optional
+import secrets
+from pydantic import validator
 
 class Settings(BaseSettings):
     # Database
@@ -7,7 +9,7 @@ class Settings(BaseSettings):
     DATABASE_TEST_URL: str = "sqlite:///./test.db"
     
     # Security
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = secrets.token_urlsafe(32)  # Generate secure key if not provided
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
@@ -22,6 +24,7 @@ class Settings(BaseSettings):
     DEBUG: Optional[bool] = True
     HOST: Optional[str] = "0.0.0.0"
     PORT: Optional[int] = 8000
+    LOG_LEVEL: Optional[str] = "INFO"
     
     # Upload
     UPLOAD_DIR: Optional[str] = "./static/uploads"
@@ -45,5 +48,11 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
         extra = "allow"  # Allow extra fields from .env
+        
+        @validator('SECRET_KEY')
+        def validate_secret_key(cls, v):
+            if v == "your-secret-key-change-in-production":
+                raise ValueError('SECRET_KEY must be changed in production')
+            return v
 
 settings = Settings()
