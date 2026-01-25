@@ -21,7 +21,6 @@ const Home = () => {
         setLoading(true);
         setError(null);
         
-        // Use getFeatured for featured characters instead of filtering
         const [featured, categoriesList] = await Promise.all([
           characters.getFeatured(6),
           characters.getCategories()
@@ -31,10 +30,11 @@ const Home = () => {
           setFeaturedCharacters(Array.isArray(featured) ? featured : []);
           setCategories(Array.isArray(categoriesList) ? categoriesList : []);
         }
+        
       } catch (err) {
+        console.error('Error fetching home data:', err);
         if (isMounted) {
-          setError(err.message || 'فشل في تحميل البيانات. يرجى المحاولة مرة أخرى لاحقاً');
-          console.error('Error fetching home data:', err);
+          setError('Failed to load page content');
         }
       } finally {
         if (isMounted) {
@@ -45,13 +45,12 @@ const Home = () => {
 
     fetchData();
     
-    // Cleanup function to prevent state updates after unmount
     return () => {
       isMounted = false;
     };
   }, []);
 
-  if (loading && !featuredCharacters.length) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="large" />
@@ -59,7 +58,7 @@ const Home = () => {
     );
   }
 
-  if (error && !featuredCharacters.length) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
@@ -70,6 +69,31 @@ const Home = () => {
           >
             إعادة المحاولة
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (featuredCharacters.length === 0 && categories.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">مرحباً بك في تطبيق "على خطاهم"</h1>
+          <p className="text-gray-600 mb-8">
+            لا توجد شخصيات متاحة حالياً. يرجى إضافة بعض الشخصيات الإسلامية لبدء رحلة التعلم.
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-800 mb-2">للمسئولي:</h3>
+            <p className="text-blue-700 text-sm">
+              يمكنك إضافة شخصيات من خلال لوحة الإدارة أو استخدام واجهة برمجة API.
+            </p>
+          </div>
+          <Link 
+            to="/admin"
+            className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            الذهاب إلى لوحة الإدارة
+          </Link>
         </div>
       </div>
     );

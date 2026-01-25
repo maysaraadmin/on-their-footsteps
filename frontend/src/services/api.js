@@ -3,7 +3,7 @@ import ApiService from './apiService'
 import { requestDeduplication } from '../utils/requestDeduplicator'
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 const MAX_RETRIES = 2
 const RETRY_DELAY = 5000 // 5 seconds
 

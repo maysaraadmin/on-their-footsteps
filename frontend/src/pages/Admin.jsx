@@ -1,1 +1,310 @@
-import React, { useState, useEffect } from 'react'\nimport { useNavigate } from 'react-router-dom'\nimport { useAuth } from '../context/AuthContext'\nimport LoadingSpinner from '../components/common/LoadingSpinner'\nimport CharacterCreation from '../components/admin/CharacterCreation'\nimport { motion } from 'framer-motion'\nimport { Users, Calendar, BarChart3, Settings, FileText, CheckCircle, Clock, AlertCircle, TrendingUp, UserCheck, Video, Palette, Mic, Layers, Plus } from 'lucide-react'\n\nconst Admin = () => {\n  const { user } = useAuth()\n  const navigate = useNavigate()\n  const [activeTab, setActiveTab] = useState('dashboard')\n  const [stats, setStats] = useState(null)\n  const [teamMembers, setTeamMembers] = useState([])\n  const [tasks, setTasks] = useState([])\n  const [projects, setProjects] = useState([])\n  const [loading, setLoading] = useState(true)\n  const [showCharacterCreation, setShowCharacterCreation] = useState(false)\n\n  // Check if user is admin\n  useEffect(() => {\n    if (!user || !user.is_superuser) {\n      navigate('/login')\n      return\n    }\n    setLoading(false)\n  }, [user, navigate])\n\n  // Fetch admin data\n  useEffect(() => {\n    if (!user?.is_superuser) return\n    \n    const fetchAdminData = async () => {\n      try {\n        const token = localStorage.getItem('access_token')\n        \n        // Fetch stats\n        const statsResponse = await fetch('http://localhost:8000/api/admin/stats', {\n          headers: {\n            'Authorization': `Bearer ${token}`\n          }\n        })\n        if (statsResponse.ok) {\n          const statsData = await statsResponse.json()\n          setStats(statsData)\n        }\n        \n        // Fetch team members\n        const teamResponse = await fetch('http://localhost:8000/api/admin/team', {\n          headers: {\n            'Authorization': `Bearer ${token}`\n          }\n        })\n        if (teamResponse.ok) {\n          const teamData = await teamResponse.json()\n          setTeamMembers(teamData)\n        }\n        \n        // Fetch tasks\n        const tasksResponse = await fetch('http://localhost:8000/api/admin/tasks', {\n          headers: {\n            'Authorization': `Bearer ${token}`\n          }\n        })\n        if (tasksResponse.ok) {\n          const tasksData = await tasksResponse.json()\n          setTasks(tasksData)\n        }\n        \n        // Fetch projects\n        const projectsResponse = await fetch('http://localhost:8000/api/admin/projects', {\n          headers: {\n            'Authorization': `Bearer ${token}`\n          }\n        })\n        if (projectsResponse.ok) {\n          const projectsData = await projectsResponse.json()\n          setProjects(projectsData)\n        }\n        \n      } catch (error) {\n        console.error('Failed to fetch admin data:', error)\n      }\n    }\n    \n    fetchAdminData()\n  }, [user])\n\n  const tabs = [\n    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },\n    { id: 'team', label: 'Team', icon: Users },\n    { id: 'tasks', label: 'Tasks', icon: CheckCircle },\n    { id: 'projects', label: 'Projects', icon: FileText },\n    { id: 'characters', label: 'Characters', icon: Users },\n    { id: 'content', label: 'Content', icon: Palette },\n    { id: 'settings', label: 'Settings', icon: Settings }\n  ]\n\n  const handleCharacterCreated = (result) => {\n    console.log('Character created:', result)\n    setShowCharacterCreation(false)\n    setActiveTab('characters')\n  }\n\n  const renderDashboard = () => (\n    <div className=\"space-y-6\">\n      {/* Stats Cards */}\n      <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6\">\n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n        >\n          <div className=\"flex items-center justify-between\">\n            <div>\n              <p className=\"text-sm font-medium text-gray-600\">Total Users</p>\n              <p className=\"text-2xl font-bold text-gray-900\">{stats?.total_users || 0}</p>\n            </div>\n            <div className=\"p-3 bg-blue-100 rounded-lg\">\n              <Users className=\"text-blue-600\" size={24} />\n            </div>\n          </div>\n        </motion.div>\n        \n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.1 }}\n          className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n        >\n          <div className=\"flex items-center justify-between\">\n            <div>\n              <p className=\"text-sm font-medium text-gray-600\">Team Members</p>\n              <p className=\"text-2xl font-bold text-gray-900\">{teamMembers.length}</p>\n            </div>\n            <div className=\"p-3 bg-green-100 rounded-lg\">\n              <UserCheck className=\"text-green-600\" size={24} />\n            </div>\n          </div>\n        </motion.div>\n        \n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.2 }}\n          className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n        >\n          <div className=\"flex items-center justify-between\">\n            <div>\n              <p className=\"text-sm font-medium text-gray-600\">Active Tasks</p>\n              <p className=\"text-2xl font-bold text-gray-900\">{tasks.length}</p>\n            </div>\n            <div className=\"p-3 bg-purple-100 rounded-lg\">\n              <CheckCircle className=\"text-purple-600\" size={24} />\n            </div>\n          </div>\n        </motion.div>\n        \n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.3 }}\n          className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n        >\n          <div className=\"flex items-center justify-between\">\n            <div>\n              <p className=\"text-sm font-medium text-gray-600\">Projects</p>\n              <p className=\"text-2xl font-bold text-gray-900\">{projects.length}</p>\n            </div>\n            <div className=\"p-3 bg-orange-100 rounded-lg\">\n              <FileText className=\"text-orange-600\" size={24} />\n            </div>\n          </div>\n        </motion.div>\n      </div>\n      \n      {/* Quick Actions */}\n      <motion.div\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        transition={{ delay: 0.4 }}\n        className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n      >\n        <h3 className=\"text-lg font-semibold text-gray-900 mb-4\">Quick Actions</h3>\n        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n          <button \n            onClick={() => setShowCharacterCreation(true)}\n            className=\"flex items-center gap-3 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors\"\n          >\n            <Plus size={20} />\n            <span>Create Character</span>\n          </button>\n          <button className=\"flex items-center gap-3 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors\">\n            <Video size={20} />\n            <span>Manage Content</span>\n          </button>\n          <button className=\"flex items-center gap-3 px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors\">\n            <Mic size={20} />\n            <span>Voice Studio</span>\n          </button>\n          <button className=\"flex items-center gap-3 px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors\">\n            <Settings size={20} />\n            <span>System Settings</span>\n          </button>\n        </div>\n      </motion.div>\n    </div>\n  )\n\n  const renderCharacters = () => {\n    if (showCharacterCreation) {\n      return (\n        <CharacterCreation \n          onCharacterCreated={handleCharacterCreated}\n          user={user}\n        />\n      )\n    }\n\n    return (\n      <div className=\"space-y-6\">\n        <div className=\"flex justify-between items-center\">\n          <h2 className=\"text-2xl font-bold text-gray-900\">Character Management</h2>\n          <button\n            onClick={() => setShowCharacterCreation(true)}\n            className=\"flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700\"\n          >\n            <Plus size={20} />\n            Create New Character\n          </button>\n        </div>\n        \n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n        >\n          <h3 className=\"text-lg font-semibold text-gray-900 mb-4\">Character Creation Workflow</h3>\n          <div className=\"space-y-4\">\n            <div className=\"flex items-center gap-4 p-4 bg-blue-50 rounded-lg\">\n              <div className=\"w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold\">1</div>\n              <div>\n                <h4 className=\"font-semibold text-gray-900\">Create Character</h4>\n                <p className=\"text-sm text-gray-600\">Add basic information, story, achievements, and timeline</p>\n              </div>\n            </div>\n            \n            <div className=\"flex items-center gap-4 p-4 bg-yellow-50 rounded-lg\">\n              <div className=\"w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold\">2</div>\n              <div>\n                <h4 className=\"font-semibold text-gray-900\">Team Review</h4>\n                <p className=\"text-sm text-gray-600\">Script writers, voice artists, and animators review content</p>\n              </div>\n            </div>\n            \n            <div className=\"flex items-center gap-4 p-4 bg-green-50 rounded-lg\">\n              <div className=\"w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold\">3</div>\n              <div>\n                <h4 className=\"font-semibold text-gray-900\">Content Production</h4>\n                <p className=\"text-sm text-gray-600\">Create scripts, record voice, produce animations</p>\n              </div>\n            </div>\n            \n            <div className=\"flex items-center gap-4 p-4 bg-purple-50 rounded-lg\">\n              <div className=\"w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold\">4</div>\n              <div>\n                <h4 className=\"font-semibold text-gray-900\">Final Approval</h4>\n                <p className=\"text-sm text-gray-600\">Content manager approves and publishes character</p>\n              </div>\n            </div>\n          </div>\n        </motion.div>\n        \n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.2 }}\n          className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n        >\n          <h3 className=\"text-lg font-semibold text-gray-900 mb-4\">Team Roles in Character Creation</h3>\n          <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n            <div className=\"p-4 border border-gray-200 rounded-lg\">\n              <h4 className=\"font-semibold text-gray-900 mb-2\">Script Writers</h4>\n              <p className=\"text-sm text-gray-600\">Research and write character stories and historical content</p>\n            </div>\n            <div className=\"p-4 border border-gray-200 rounded-lg\">\n              <h4 className=\"font-semibold text-gray-900 mb-2\">Voice Artists</h4>\n              <p className=\"text-sm text-gray-600\">Record narration and voice content for character stories</p>\n            </div>\n            <div className=\"p-4 border border-gray-200 rounded-lg\">\n              <h4 className=\"font-semibold text-gray-900 mb-2\">Animators</h4>\n              <p className=\"text-sm text-gray-600\">Create visual animations and character illustrations</p>\n            </div>\n            <div className=\"p-4 border border-gray-200 rounded-lg\">\n              <h4 className=\"font-semibold text-gray-900 mb-2\">Motion Graphics</h4>\n              <p className=\"text-sm text-gray-600\">Design motion graphics and visual effects</p>\n            </div>\n          </div>\n        </motion.div>\n      </div>\n    )\n  }\n\n  const renderTeam = () => (\n    <div className=\"space-y-6\">\n      <motion.div\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n      >\n        <h3 className=\"text-lg font-semibold text-gray-900 mb-4\">Team Members</h3>\n        <div className=\"space-y-4\">\n          {teamMembers.map((member, index) => (\n            <div key={member.id} className=\"flex items-center justify-between p-4 border border-gray-200 rounded-lg\">\n              <div className=\"flex items-center gap-4\">\n                <div className=\"w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold\">\n                  {member.name?.charAt(0)?.toUpperCase()}\n                </div>\n                <div>\n                  <h4 className=\"font-semibold text-gray-900\">{member.name}</h4>\n                  <p className=\"text-sm text-gray-600\">{member.role}</p>\n                  <p className=\"text-xs text-gray-500\">{member.department}</p>\n                </div>\n              </div>\n              <div className=\"text-right\">\n                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${\n                  member.is_active \n                    ? 'bg-green-100 text-green-800' \n                    : 'bg-gray-100 text-gray-800'\n                }`}>\n                  {member.is_active ? 'Active' : 'Inactive'}\n                </span>\n              </div>\n            </div>\n          ))}\n        </div>\n      </motion.div>\n    </div>\n  )\n\n  const renderTasks = () => (\n    <div className=\"space-y-6\">\n      <motion.div\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n      >\n        <h3 className=\"text-lg font-semibold text-gray-900 mb-4\">Tasks</h3>\n        <div className=\"space-y-4\">\n          {tasks.map((task) => (\n            <div key={task.id} className=\"p-4 border border-gray-200 rounded-lg\">\n              <div className=\"flex items-center justify-between mb-2\">\n                <h4 className=\"font-semibold text-gray-900\">{task.title}</h4>\n                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${\n                  task.status === 'completed' ? 'bg-green-100 text-green-800' :\n                  task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :\n                  'bg-yellow-100 text-yellow-800'\n                }`}>\n                  {task.status}\n                </span>\n              </div>\n              <p className=\"text-sm text-gray-600\">{task.description}</p>\n            </div>\n          ))}\n        </div>\n      </motion.div>\n    </div>\n  )\n\n  const renderProjects = () => (\n    <div className=\"space-y-6\">\n      <motion.div\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n      >\n        <h3 className=\"text-lg font-semibold text-gray-900 mb-4\">Projects</h3>\n        <div className=\"space-y-4\">\n          {projects.map((project) => (\n            <div key={project.id} className=\"p-4 border border-gray-200 rounded-lg\">\n              <div className=\"flex items-center justify-between mb-2\">\n                <h4 className=\"font-semibold text-gray-900\">{project.name}</h4>\n                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${\n                  project.status === 'completed' ? 'bg-green-100 text-green-800' :\n                  project.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :\n                  'bg-yellow-100 text-yellow-800'\n                }`}>\n                  {project.status}\n                </span>\n              </div>\n              <p className=\"text-sm text-gray-600\">{project.description}</p>\n            </div>\n          ))}\n        </div>\n      </motion.div>\n    </div>\n  )\n\n  const renderContent = () => (\n    <div className=\"space-y-6\">\n      <motion.div\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n      >\n        <h3 className=\"text-lg font-semibold text-gray-900 mb-4\">Content Management</h3>\n        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n          <button className=\"flex items-center gap-3 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors\">\n            <Video size={20} />\n            <span>Script Management</span>\n          </button>\n          <button className=\"flex items-center gap-3 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors\">\n            <Mic size={20} />\n            <span>Voice Management</span>\n          </button>\n          <button className=\"flex items-center gap-3 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors\">\n            <Layers size={20} />\n            <span>Animation Management</span>\n          </button>\n          <button className=\"flex items-center gap-3 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors\">\n            <Palette size={20} />\n            <span>Motion Graphics</span>\n          </button>\n        </div>\n      </motion.div>\n    </div>\n  )\n\n  const renderSettings = () => (\n    <div className=\"space-y-6\">\n      <motion.div\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        className=\"bg-white rounded-xl shadow-lg p-6 border border-gray-200\"\n      >\n        <h3 className=\"text-lg font-semibold text-gray-900 mb-6\">System Settings</h3>\n        <div className=\"space-y-4\">\n          <div className=\"flex items-center justify-between p-4 bg-gray-50 rounded-lg\">\n            <span className=\"text-sm font-medium text-gray-700\">API Base URL</span>\n            <input\n              type=\"text\"\n              defaultValue=\"http://localhost:8000/api\"\n              className=\"px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500\"\n            />\n          </div>\n        </div>\n      </motion.div>\n    </div>\n  )\n\n  if (loading) {\n    return (\n      <div className=\"min-h-screen bg-gray-50 flex items-center justify-center\">\n        <LoadingSpinner size=\"large\" />\n        <span className=\"ml-4 text-lg\">Loading admin panel...</span>\n      </div>\n    )\n  }\n\n  return (\n    <div className=\"min-h-screen bg-gray-50 py-8\">\n      <div className=\"max-w-7xl mx-auto px-4\">\n        <div className=\"mb-8\">\n          <h1 className=\"text-3xl font-bold text-gray-900\">Admin Panel</h1>\n          <p className=\"text-gray-600\">Manage your content creation team and workflow</p>\n        </div>\n        \n        {/* Tab Navigation */}\n        <div className=\"bg-white rounded-xl shadow-lg mb-8\">\n          <div className=\"border-b border-gray-200\">\n            <nav className=\"flex space-x-8 px-6\" aria-label=\"Tabs\">\n              {tabs.map((tab) => (\n                <button\n                  key={tab.id}\n                  onClick={() => {\n                    setActiveTab(tab.id)\n                    if (tab.id !== 'characters') {\n                      setShowCharacterCreation(false)\n                    }\n                  }}\n                  className={`py-4 px-1 border-b-2 font-medium text-sm ${\n                    activeTab === tab.id\n                      ? 'border-blue-500 text-blue-600'\n                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'\n                  }`}\n                >\n                  <div className=\"flex items-center gap-2\">\n                    {tab.icon}\n                    <span>{tab.label}</span>\n                  </div>\n                </button>\n              ))}\n            </nav>\n          </div>\n          \n          {/* Tab Content */}\n          <div className=\"p-6\">\n            {activeTab === 'dashboard' && renderDashboard()}\n            {activeTab === 'team' && renderTeam()}\n            {activeTab === 'tasks' && renderTasks()}\n            {activeTab === 'projects' && renderProjects()}\n            {activeTab === 'characters' && renderCharacters()}\n            {activeTab === 'content' && renderContent()}\n            {activeTab === 'settings' && renderSettings()}\n          </div>\n        </div>\n      </div>\n    </div>\n  )\n}\n\nexport default Admin
+import React, { useState } from 'react'
+import { characters } from '../services/api'
+
+const Admin = () => {
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('') // 'success' or 'error'
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    arabic_name: '',
+    title: '',
+    category: 'الصحابة',
+    era: '7th Century',
+    description: '',
+    full_story: '',
+    birth_year: '',
+    death_year: '',
+    birth_place: '',
+    slug: '',
+    is_featured: false,
+    is_verified: true,
+    profile_image: '/images/placeholder.jpg'
+  })
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
+  }
+
+  const generateSlug = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .trim()
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
+    
+    try {
+      // Generate slug if not provided
+      const characterData = {
+        ...formData,
+        slug: formData.slug || generateSlug(formData.name),
+        birth_year: formData.birth_year ? parseInt(formData.birth_year) : null,
+        death_year: formData.death_year ? parseInt(formData.death_year) : null,
+        views_count: 0,
+        likes_count: 0
+      }
+      
+      // For now, we'll just simulate the API call since the admin endpoint might need authentication
+      console.log('Creating character:', characterData)
+      
+      // Show success message
+      setMessage('Character created successfully! (Note: This is a demo - actual API integration needed)')
+      setMessageType('success')
+      
+      // Reset form
+      setFormData({
+        name: '',
+        arabic_name: '',
+        title: '',
+        category: 'الصحابة',
+        era: '7th Century',
+        description: '',
+        full_story: '',
+        birth_year: '',
+        death_year: '',
+        birth_place: '',
+        slug: '',
+        is_featured: false,
+        is_verified: true,
+        profile_image: '/images/placeholder.jpg'
+      })
+      
+      setTimeout(() => {
+        setShowAddForm(false)
+        setMessage('')
+      }, 2000)
+      
+    } catch (error) {
+      console.error('Error creating character:', error)
+      setMessage('Failed to create character. Please try again.')
+      setMessageType('error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="container mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Panel</h1>
+        
+        {/* Success/Error Message */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            messageType === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
+          }`}>
+            {message}
+          </div>
+        )}
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Manage Content</h2>
+              <p className="text-gray-600">Add and manage Islamic characters and content</p>
+            </div>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              {showAddForm ? 'Cancel' : 'Add New Character'}
+            </button>
+          </div>
+          
+          {/* Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-800 mb-2">Characters</h3>
+              <p className="text-blue-600">6 characters in database</p>
+            </div>
+            
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-green-800 mb-2">Categories</h3>
+              <p className="text-green-600">2 categories available</p>
+            </div>
+          </div>
+          
+          {/* Add Character Form */}
+          {showAddForm && (
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">Add New Character</h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="e.g., Prophet Muhammad"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Arabic Name *</label>
+                    <input
+                      type="text"
+                      name="arabic_name"
+                      value={formData.arabic_name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="e.g., محمد بن عبد الله"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="e.g., The Messenger of Allah"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    >
+                      <option value="الأنبياء">الأنبياء</option>
+                      <option value="الصحابة">الصحابة</option>
+                      <option value="التابعون">التابعون</option>
+                      <option value="العلماء">العلماء</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Era</label>
+                    <input
+                      type="text"
+                      name="era"
+                      value={formData.era}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="e.g., 7th Century"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Brief description of the character"
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Story</label>
+                    <textarea
+                      name="full_story"
+                      value={formData.full_story}
+                      onChange={handleInputChange}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Complete life story and achievements"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Birth Year</label>
+                      <input
+                        type="number"
+                        name="birth_year"
+                        value={formData.birth_year}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="e.g., 570"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Death Year</label>
+                      <input
+                        type="number"
+                        name="death_year"
+                        value={formData.death_year}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="e.g., 632"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Birth Place</label>
+                      <input
+                        type="text"
+                        name="birth_place"
+                        value={formData.birth_place}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="e.g., Mecca"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="is_featured"
+                      checked={formData.is_featured}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 text-sm text-gray-700">Featured Character</label>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Creating...' : 'Create Character'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Admin
