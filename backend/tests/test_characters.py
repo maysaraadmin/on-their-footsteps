@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.database import get_db, Base
 from app.models import IslamicCharacter
+from app.utils.validators import InputValidator, ValidationError, SearchValidator
 
 # Create test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -30,8 +31,8 @@ app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
-class TestCharactersAPI:
-    """Test suite for Characters API endpoints"""
+class TestCharacterAPI:
+    """Test character API endpoints."""
     
     def setup_method(self):
         """Setup test data before each test"""

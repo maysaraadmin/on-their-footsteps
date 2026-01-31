@@ -4,6 +4,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { safeStorage } from '../utils/safeStorage';
+import { inputValidator } from '../utils/inputValidator';
+import { useDebouncedViewIncrement } from './useDebouncedViewIncrement';
 import CharacterRepository from '../repositories/characterRepository';
 
 /**
@@ -294,6 +297,9 @@ export function useCharacter(identifier, options = {}) {
   /**
    * Increment view count
    */
+  // Use debounced view increment hook
+  const { incrementView, cleanup } = useDebouncedViewIncrement(character?.id || character?.slug);
+
   // Debounced view increment to prevent multiple rapid calls
   const incrementViews = useCallback(async () => {
     if (!character) {
@@ -301,55 +307,23 @@ export function useCharacter(identifier, options = {}) {
       return null;
     }
 
-    const characterId = character.id || character.slug;
-    if (!characterId) {
-      console.error('Cannot increment views: Missing character ID/slug');
-      return null;
-    }
-
-    // Only increment views if we haven't done so recently for this character
-    const lastViewKey = `lastView_${characterId}`;
-    const lastViewTime = localStorage.getItem(lastViewKey);
-    const now = Date.now();
-    
-    // Only increment views if it's been more than 5 minutes since last view
-    if (lastViewTime && (now - parseInt(lastViewTime, 10)) < 300000) {
-      console.log('View count not incremented - too soon since last view');
+    // Validate character ID
+    const idValidation = inputValidator.validateID(character.id || character.slug);
+    if (!idValidation.isValid) {
+      console.error('Cannot increment views: Invalid character ID');
       return null;
     }
 
     try {
-      console.log(`Incrementing views for character: ${characterId}`);
-      const updatedCharacter = await repository.current.incrementViews(characterId);
-      
-      // Update the last view time
-      localStorage.setItem(lastViewKey, now.toString());
-      
-      // Update the character data if still mounted
-      if (isMounted.current) {
-        setCharacter(prev => ({
-          ...prev,
-          views_count: updatedCharacter.views_count
-        }));
+      const success = await incrementView();
+      if (success) {
+        // Refresh character data to get updated view count
+        const updatedCharacter = await repository.current.getByIdentifier(identifier);
+        if (isMounted.current && updatedCharacter) {
+          setCharacter(updatedCharacter);
+        }
+        return updatedCharacter;
       }
-      console.log('Successfully incremented views:', updatedCharacter);
-      setCharacter(updatedCharacter);
-      return updatedCharacter;
-    } catch (err) {
-      // Enhanced error logging
-      const errorDetails = {
-        message: err.message,
-        name: err.name,
-        code: err.code,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        responseData: err.response?.data,
-        config: {
-          url: err.config?.url,
-          method: err.config?.method,
-          baseURL: err.config?.baseURL,
-          timeout: err.config?.timeout,
-          headers: err.config?.headers,
         },
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
       };

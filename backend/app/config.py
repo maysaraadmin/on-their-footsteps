@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     ]
     
     # Application
-    DEBUG: Optional[bool] = True
+    DEBUG: Optional[bool] = False  # Disabled for production security
     HOST: Optional[str] = "0.0.0.0"
     PORT: Optional[int] = 8000
     LOG_LEVEL: Optional[str] = "INFO"
